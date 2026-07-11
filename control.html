@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – HACKVERSE X</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="cert-engine.js"></script>
+  <style>
+    :root {
+      --navy: #020617;
+      --navy2: #0B132B;
+      --navy3: #1E293B;
+      --gold: #06B6D4;
+      --gold2: #22D3EE;
+      --bg: #020617;
+      --sidebar: #030712;
+      --card: rgba(15, 23, 42, 0.45);
+      --border: rgba(6, 182, 212, 0.12);
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+      --green: #10B981;
+      --red: #EF4444;
+      --blue: #3B82F6;
+      --orange: #F59E0B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Montserrat', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    canvas#stars {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── LOGIN ── */
+    #login-page {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-box {
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(200, 168, 75, .25);
+      border-radius: 20px;
+      padding: 50px 44px;
+      max-width: 440px;
+      width: 100%;
+      backdrop-filter: blur(30px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .login-box::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold), var(--gold2), var(--gold), transparent);
+    }
+
+    .login-logo {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+    }
+
+    .login-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .login-sub {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-bottom: 36px;
+    }
+
+    .lf-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+
+    .lf-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .lf-group input {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: all .3s;
+    }
+
+    .lf-group input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(200, 168, 75, .12);
+    }
+
+    .lf-group input::placeholder {
+      color: rgba(255, 255, 255, .2);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      border: none;
+      border-radius: 12px;
+      color: var(--navy);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .3s;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(200, 168, 75, .4);
+    }
+
+    /* ── LAYOUT ── */
+    #app {
+      display: none;
+      position: relative;
+      z-index: 10;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .layout {
+      display: flex;
+      height: 100%;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      min-width: 260px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0 0 20px;
+      overflow-y: auto;
+    }
+
+    .sb-brand {
+      padding: 28px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sb-brand-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .sb-brand-sub {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-top: 3px;
+    }
+
+    .sb-section {
+      padding: 14px 16px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      transition: all .2s;
+      border-left: 3px solid transparent;
+      text-decoration: none;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      color: #fff;
+      background: rgba(200, 168, 75, .07);
+      border-left-color: var(--gold);
+    }
+
+    .nav-btn.danger {
+      color: var(--red);
+    }
+
+    .nav-btn.danger:hover {
+      background: rgba(239, 68, 68, .08);
+    }
+
+    .sb-spacer {
+      flex: 1;
+    }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    .main-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 16, 31, .96);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(20px);
+    }
+
+    .main-header h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .main-body {
+      padding: 28px 32px;
+    }
+
+    /* PANELS */
+    .panel {
+      display: none;
+      animation: fadeUp .3s ease;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .stat-card.blue::before {
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    }
+
+    .stat-card.green::before {
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+    }
+
+    .stat-card.gold::before {
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .stat-card.orange::before {
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+    }
+
+    .stat-card.red::before {
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .stat-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 34px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* CHARTS */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+    }
+
+    .chart-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 200px;
+    }
+
+    @media(max-width:900px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CARDS */
+    .content-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: gap;
+    }
+
+    /* TABLES */
+    .tbl-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    td {
+      padding: 13px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, .03);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, .015);
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+
+    .badge-green {
+      background: rgba(34, 197, 94, .12);
+      color: var(--green);
+      border: 1px solid rgba(34, 197, 94, .3);
+    }
+
+    .badge-yellow {
+      background: rgba(200, 168, 75, .1);
+      color: var(--gold);
+      border: 1px solid rgba(200, 168, 75, .3);
+    }
+
+    .badge-blue {
+      background: rgba(59, 130, 246, .1);
+      color: var(--blue);
+      border: 1px solid rgba(59, 130, 246, .3);
+    }
+
+    /* FORMS */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-row.single {
+      grid-template-columns: 1fr;
+    }
+
+    .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .fg label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .fg input,
+    .fg select,
+    .fg textarea {
+      padding: 11px 14px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: all .3s;
+    }
+
+    .fg input:focus,
+    .fg select:focus,
+    .fg textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(200, 168, 75, .1);
+    }
+
+    .fg input::placeholder {
+      color: rgba(255, 255, 255, .2);
+    }
+
+    .fg select option {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .25s;
+      border: 1px solid transparent;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: var(--navy);
+      border: none;
+    }
+
+    .btn-gold:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(200, 168, 75, .35);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, .08);
+      border-color: rgba(239, 68, 68, .3);
+      color: var(--red);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, .18);
+    }
+
+    .btn-blue {
+      background: rgba(59, 130, 246, .1);
+      border-color: rgba(59, 130, 246, .3);
+      color: var(--blue);
+    }
+
+    .btn-blue:hover {
+      background: rgba(59, 130, 246, .2);
+    }
+
+    .flex-end {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .flex-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    /* DROP ZONE */
+    .drop-zone {
+      border: 2px dashed rgba(200, 168, 75, .25);
+      border-radius: 12px;
+      padding: 36px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .3s;
+      background: rgba(200, 168, 75, .02);
+      margin-bottom: 18px;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--gold);
+      background: rgba(200, 168, 75, .05);
+    }
+
+    .drop-zone h4 {
+      color: var(--gold);
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .drop-zone p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* SIGNATURE GRID - improved */
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .sig-card {
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      text-align: center;
+    }
+
+    .sig-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .sig-card .sig-role {
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .sig-preview {
+      width: 100%;
+      height: 90px;
+      background: #fff;
+      border: 2px solid rgba(200, 168, 75, .25);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .sig-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .sig-preview.empty {
+      background: rgba(255, 255, 255, .05);
+      border: 2px dashed var(--border);
+    }
+
+    .sig-preview.empty span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* E-SIGNATURE CANVAS */
+    .esig-canvas-wrap {
+      position: relative;
+    }
+
+    .esig-canvas {
+      width: 100%;
+      height: 90px;
+      background: #fff;
+      border-radius: 8px;
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+    }
+
+    .esig-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* TEMPLATE GRID */
+    .tpl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .tpl-card {
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      text-align: center;
+    }
+
+    .tpl-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .tpl-card p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .tpl-preview {
+      width: 100%;
+      height: 130px;
+      background: rgba(255, 255, 255, .04);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tpl-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .tpl-preview span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* WINNER CODE CARDS */
+    .wcode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .wcode-card {
+      background: rgba(255, 255, 255, .025);
+      border-radius: 12px;
+      padding: 20px 18px;
+    }
+
+    .wcode-card.c1 {
+      border: 1px solid rgba(200, 168, 75, .4);
+    }
+
+    .wcode-card.c2 {
+      border: 1px solid rgba(192, 192, 192, .3);
+    }
+
+    .wcode-card.c3 {
+      border: 1px solid rgba(205, 127, 50, .3);
+    }
+
+    .wcode-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .c1 .wcode-label {
+      color: var(--gold);
+    }
+
+    .c2 .wcode-label {
+      color: #c0c0c0;
+    }
+
+    .c3 .wcode-label {
+      color: #cd7f32;
+    }
+
+    /* JUDGE CODES */
+    .jcode-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .jcode-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, .025);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .jcode-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .jcode-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--gold);
+      background: rgba(200, 168, 75, .08);
+      border: 1px solid rgba(200, 168, 75, .2);
+      border-radius: 6px;
+      padding: 5px 12px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(200, 168, 75, .3);
+      border-radius: 2px;
+    }
+
+    @media(max-width:900px) {
+      .preview-layout { flex-direction: column; }
+    }
+
+    @media(max-width:768px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); padding: 12px; flex-direction: row; flex-wrap: wrap; gap: 4px; overflow: visible; height: auto; }
+      .sb-brand { width: 100%; border-bottom: none; margin-bottom: 4px; }
+      .sb-section { display: none; }
+      .nav-btn { padding: 6px 10px; font-size: 11px; border-left: none; border-bottom: 2px solid transparent; flex: 1 1 auto; text-align: center; }
+      .nav-btn.active { border-left: none; border-bottom-color: var(--gold); background: rgba(200, 168, 75, .05); }
+      .main { height: calc(100vh - 180px); overflow-y: auto; }
+      .main-body { padding: 16px; }
+      .wcode-grid, .form-row, .charts-grid, .sig-grid, .tpl-grid { grid-template-columns: 1fr; }
+      .main-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .header-actions { width: 100%; display: flex; gap: 10px; flex-wrap: wrap; }
+      .stat-card { padding: 16px; }
+      .login-box { width: 90%; padding: 30px 20px; }
+    }
+
+    @media(max-width:480px) {
+      .sidebar { justify-content: center; }
+      .nav-btn { font-size: 10px; padding: 6px 8px; flex: 0 0 auto; }
+      .page-title { font-size: 20px; }
+      .stat-val { font-size: 28px; }
+      .btn { width: 100%; justify-content: center; }
+      .header-actions .btn { width: auto; flex: 1; }
+      .drop-zone { padding: 20px; }
+      .tbl-wrap { overflow-x: auto; }
+      .main-header { padding: 16px 20px; }
+      .main-body { padding: 10px; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Source Protection -->
+  <script>
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => { if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) e.preventDefault(); });
+  </script>
+
+  <canvas id="stars"></canvas>
+
+  <!-- ═══ LOGIN ═══ -->
+  <div id="login-page" onclick="if(event.target === this) window.location.href='index.html'">
+    <div class="login-box">
+      <div class="login-logo">HACKVERSE X</div>
+      <div class="login-title">Admin Panel</div>
+      <div class="login-sub">Secure access · Authorized personnel only</div>
+      <div class="lf-group">
+        <label>Email Address</label>
+        <input type="email" id="aEmail" placeholder="admin@domain.com" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="lf-group">
+        <label>Password</label>
+        <input type="password" id="aPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-login" onclick="doLogin()">🔐 Access Dashboard</button>
+    </div>
+  </div>
+
+  <!-- ═══ APP ═══ -->
+  <div id="app">
+    <div class="layout">
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sb-brand">
+          <div class="sb-brand-title">HACKVERSE X</div>
+          <div class="sb-brand-sub">Global Tech Admin</div>
+        </div>
+        <div class="sb-section">Dashboard</div>
+        <div class="nav-btn active" onclick="nav('overview',this)">📊 Overview</div>
+        <div class="sb-section">Certificates</div>
+        <div class="nav-btn" onclick="nav('participants',this)">👥 Participants</div>
+        <div class="nav-btn" onclick="nav('preview',this)">🖼️ Live Preview</div>
+        <div class="nav-btn" onclick="nav('templates',this)">📁 Templates</div>
+        <div class="sb-section">Prize & Access</div>
+        <div class="nav-btn" onclick="nav('winners',this)">🏆 Winner Codes</div>
+        <div class="nav-btn" onclick="nav('judges',this)">⚖️ Judge Codes</div>
+        <div class="sb-spacer"></div>
+        <div class="nav-btn" onclick="nav('settings',this)">⚙️ Settings</div>
+        <div class="nav-btn danger" onclick="doLogout()">🚪 Logout</div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main">
+        <div class="main-header">
+          <h2 id="panelTitle">Overview</h2>
+          <span id="live-clock" style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;"></span>
+        </div>
+        <div class="main-body">
+
+          <!-- OVERVIEW -->
+          <div id="p-overview" class="panel active">
+            <div class="stats-grid">
+              <div class="stat-card blue">
+                <div class="stat-label">Participants Imported</div>
+                <div class="stat-val" id="s-total">0</div>
+                <div class="stat-sub">From Excel/CSV import</div>
+              </div>
+              <div class="stat-card green">
+                <div class="stat-label">Certs Generated</div>
+                <div class="stat-val" id="s-gen">0</div>
+                <div class="stat-sub">Participation certificates</div>
+              </div>
+              <div class="stat-card gold">
+                <div class="stat-label">Winner Claims</div>
+                <div class="stat-val" id="s-win">0</div>
+                <div class="stat-sub">1st + 2nd + 3rd prize</div>
+              </div>
+              <div class="stat-card orange">
+                <div class="stat-label">Judge Certs</div>
+                <div class="stat-val" id="s-jud">0</div>
+                <div class="stat-sub">Appreciation certificates</div>
+              </div>
+              <div class="stat-card red">
+                <div class="stat-label">Pending</div>
+                <div class="stat-val" id="s-pend">0</div>
+                <div class="stat-sub">Imported but not generated</div>
+              </div>
+            </div>
+            <div class="charts-grid">
+              <div class="chart-card">
+                <h3>Certificate Status</h3>
+                <div class="chart-container"><canvas id="chart-status"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <h3>Daily Activity (Last 7 Days)</h3>
+                <div class="chart-container"><canvas id="chart-daily"></canvas></div>
+              </div>
+            </div>
+            <div class="content-card">
+              <div class="card-title">Recent Certificate Generation</div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Type</th>
+                      <th>Certificate ID</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREVIEW -->
+          <div id="p-preview" class="panel">
+            <div class="content-card">
+              <div class="card-title">🖼️ Live Certificate Preview</div>
+              <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+                <!-- Controls -->
+                <div style="flex:0 0 270px;display:flex;flex-direction:column;gap:14px;">
+                  <div class="fg">
+                    <label>Certificate Type</label>
+                    <select id="prev-type" onchange="updatePreview()">
+                      <option value="participation">🎓 Participation</option>
+                      <option value="winner1">🥇 1st Prize Winner</option>
+                      <option value="winner2">🥈 2nd Prize Runner-Up</option>
+                      <option value="winner3">🥉 3rd Prize Second Runner-Up</option>
+                      <option value="judges">⚖️ Judge Appreciation</option>
+                    </select>
+                  </div>
+                
+                  <div class="fg">
+                    <label>Recipient Name</label>
+                    <input type="text" id="prev-name" placeholder="Type a name to preview…" oninput="updatePreview()"
+                      value="LOKESH M" style="text-transform:uppercase;">
+                  </div>
+                  <div id="prev-info"
+                    style="font-size:11px;color:var(--muted);line-height:2;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+                  </div>
+                  <button class="btn btn-gold" onclick="downloadPreview()">⬇ Download This Certificate</button>
+                </div>
+                <!-- Live Canvas -->
+                <div style="flex:1;min-width:280px;">
+                  <div
+                    style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative;">
+                    <canvas id="prev-canvas" style="width:100%;height:auto;display:block;"></canvas>
+                    <div id="prev-placeholder"
+                      style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:20px;">
+                      Type a name above to see the live preview</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PARTICIPANTS -->
+          <div id="p-participants" class="panel">
+            <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+              <h4>📁 Import Participant List</h4>
+              <p>Click to upload Excel (.xlsx), CSV, or XML file<br>Required columns: <strong>Name</strong> and
+                <strong>Email</strong></p>
+              <input type="file" id="fileInput" accept=".csv,.xml,.xlsx,.xls" style="display:none"
+                onchange="importFile(event)">
+            </div>
+            <div class="content-card">
+              <div class="flex-between">
+                <div class="card-title" style="margin-bottom:0">Participant List &nbsp;<span id="p-count"
+                    style="color:var(--gold);font-size:12px;"></span></div>
+                <button class="btn btn-danger" onclick="clearParts()">🗑 Clear All</button>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Cert ID</th>
+                      <th>Generated On</th>
+                    </tr>
+                  </thead>
+                  <tbody id="parts-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Bulk Export -->
+            <div class="content-card">
+              <div class="card-title">⚡ Bulk Certificate Export</div>
+              <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Generate participation certificates for
+                all imported participants and download as a ZIP of PNG files.</p>
+              <div id="bulk-progress" style="display:none;margin-bottom:16px;">
+                <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;">
+                  <div id="bulk-bar" style="background:var(--gold);height:100%;width:0%;transition:width .2s;"></div>
+                </div>
+                <div id="bulk-label" style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;"></div>
+              </div>
+              <button class="btn btn-gold" onclick="bulkExport()">📦 Generate All as ZIP</button>
+            </div>
+          </div>
+
+          <!-- SIGNATURES -->
+          <div id="p-signatures" class="panel">
+            <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Upload signature images (PNG with
+              transparent background) or draw e-signatures below. Saved to Cloudinary and synced across all
+              certificates.</p>
+            <div class="sig-grid" id="sig-grid-wrap">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- TEMPLATES -->
+          <div id="p-templates" class="panel">
+            <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Upload your 5 certificate template images.
+              Templates should already contain QR codes and signatures — the system overlays <strong
+                style="color:var(--gold)">only the recipient name</strong> onto each template.</p>
+            <div class="tpl-grid" id="tpl-grid-wrap">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- WINNERS -->
+          <div id="p-winners" class="panel">
+            <div class="content-card">
+              <div class="card-title">Edit Winner Codes</div>
+              <div class="wcode-grid">
+                <div class="wcode-card c1">
+                  <div class="wcode-label">🥇 1ST PRIZE CODE</div>
+                  <div class="fg"><input type="text" id="c1" value="WINNERS23"
+                      style="font-family:'Space Mono',monospace;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:3px;">
+                  </div>
+                </div>
+                <div class="wcode-card c2">
+                  <div class="wcode-label">🥈 2ND PRIZE CODE</div>
+                  <div class="fg"><input type="text" id="c2" value="WINNERS077"
+                      style="font-family:'Space Mono',monospace;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:3px;">
+                  </div>
+                </div>
+                <div class="wcode-card c3">
+                  <div class="wcode-label">🥉 3RD PRIZE CODES (3 Teams)</div>
+                  <div class="fg" style="margin-bottom:8px;"><input type="text" id="c3_1" value="WINNERS023"
+                      style="font-family:'Space Mono',monospace;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:3px;" placeholder="Code 1">
+                  </div>
+                  <div class="fg" style="margin-bottom:8px;"><input type="text" id="c3_2" value="WINNERS024"
+                      style="font-family:'Space Mono',monospace;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:3px;" placeholder="Code 2">
+                  </div>
+                  <div class="fg"><input type="text" id="c3_3" value="WINNERS025"
+                      style="font-family:'Space Mono',monospace;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:3px;" placeholder="Code 3">
+                  </div>
+                </div>
+              </div>
+              <div class="flex-end"><button class="btn btn-gold" onclick="saveWinnerCodes()">💾 Save Codes</button>
+              </div>
+            </div>
+            <div class="content-card">
+              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                Winner Certificate Claims
+                <button class="btn btn-danger" onclick="clearWinnerClaims()">🗑 Clear All Data</button>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Code Used</th>
+                      <th>Rank</th>
+                      <th>Cert ID</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="winners-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- JUDGES -->
+          <div id="p-judges" class="panel">
+            <div class="content-card">
+              <div class="card-title">Judge Access Codes
+                <button class="btn btn-gold" onclick="addJudgeCode()">+ Add Judge Code</button>
+              </div>
+              <p style="color:var(--muted);font-size:12px;margin-bottom:20px;">Each judge gets a unique code. They visit
+                judges.html, enter their name + code to generate their Certificate of Appreciation.</p>
+              <div class="jcode-list" id="jcode-list"></div>
+              <div class="flex-end" style="margin-top:18px;"><button class="btn btn-gold" onclick="saveJudgeCodes()">💾
+                  Save All Codes</button></div>
+            </div>
+            <div class="content-card">
+              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                Judge Certificates Generated
+                <button class="btn btn-danger" onclick="clearJudgeClaims()">🗑 Clear All Data</button>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Judge Name</th>
+                      <th>Code</th>
+                      <th>Cert ID</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="judges-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SETTINGS -->
+          <div id="p-settings" class="panel">
+            <div class="content-card">
+              <div class="card-title">Cloudinary Configuration</div>
+              <p style="color:var(--muted);font-size:12px;margin-bottom:20px;">Required for uploading signature images
+                and certificate templates.</p>
+              <div class="form-row">
+                <div class="fg"><label>Cloud Name</label><input type="text" id="cloudName"
+                    placeholder="your_cloud_name"></div>
+                <div class="fg"><label>Upload Preset (Unsigned)</label><input type="text" id="uploadPreset"
+                    placeholder="your_upload_preset"></div>
+              </div>
+              <div class="flex-end"><button class="btn btn-gold" onclick="saveSettings()">💾 Save Settings</button>
+              </div>
+            </div>
+            <div class="content-card">
+              <div class="card-title">Quick Links</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a href="index.html" target="_blank" class="btn btn-outline">🎓 Participation Page</a>
+                <a href="winner.html" target="_blank" class="btn btn-outline">🏆 Winner Page</a>
+                <a href="judges.html" target="_blank" class="btn btn-outline">⚖️ Judges Page</a>
+                <a href="https://global-tech-innovation-2026.devpost.com/project-gallery" target="_blank"
+                  class="btn btn-outline">🌐 Project Gallery</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ═══ FIREBASE ═══ */
+    const FB = {
+      apiKey: "AIzaSyCt_raRGJX6rbR06fPcFQf9L4m7IsOsLes",
+      authDomain: "result-e5462.firebaseapp.com",
+      projectId: "result-e5462",
+      storageBucket: "result-e5462.firebasestorage.app",
+      messagingSenderId: "606973269792",
+      appId: "1:606973269792:web:8ccd0b64aa430020baa945",
+      measurementId: "G-C47QP2NNDE"
+    };
+    let db = null, auth = null;
+    try { firebase.initializeApp(FB); db = firebase.firestore(); auth = firebase.auth(); } catch (e) { }
+
+    /* ═══ STATE ═══ */
+    let parts = JSON.parse(localStorage.getItem('admin_parts') || '[]');
+    let genCerts = []; let winnerClaims = []; let judgeCerts = [];
+    let sigs = [
+      { name: 'Karthickkumar S', role: 'Founder', url: '' },
+      { name: 'Sarjan P', role: 'Co-Founder', url: '' },
+      { name: 'Lokesh M', role: 'Manager', url: '' },
+      { name: 'Nishanth K', role: 'Co-ordinator', url: '' }
+    ];
+    let templates = { participation: '', winner1: '', winner2: '', winner3: '', judges: '' };
+    let judgeCodes = {
+      'Karthickkumar S': 'JUDGE-KARTHICK',
+      'Praneetha Kotla': 'JUDGE-PRANEETHA',
+      'Lokesh M': 'JUDGE-LOKESH',
+      'Sarvesh PV': 'JUDGE-SARVESH',
+      'Arunkumar S': 'JUDGE-ARUNKUMAR',
+      'Preethi Bharathy': 'JUDGE-PREETHIB',
+      'Suraj Devatha': 'JUDGE-SURAJD',
+      'Prakshal Doshi': 'JUDGE-PRAKSHAL',
+      'Ritvik Pandya': 'JUDGE-RITVIKP',
+      'Shri Lakshmi Rajagopal': 'JUDGE-SHRILAKSHMI',
+      'Archaana Pattabhii': 'JUDGE-ARCHAANAP',
+      'Sarjan P': 'JUDGE-SARJANP',
+      'Amey Farde': 'JUDGE-AMEYF',
+      'Rohan Samuel': 'JUDGE-ROHANS',
+      'Love Kumar Garg': 'JUDGE-LOVEKUMAR',
+      'Vamshidhar Parupally Reddy': 'JUDGE-VAMSHIDHAR',
+      'Naga Deepak Pothuraju': 'JUDGE-NAGADEEPAK',
+      'Ashmitha Nagraj': 'JUDGE-ASHMITHA',
+      'Ankur Bhatnagar': 'JUDGE-ANKURB',
+      'Swarnamalya Mohan': 'JUDGE-SWARNAMALYA',
+      'Venkata Phani Patelkhana': 'JUDGE-VENKATAPHANI',
+      'Rahul Nambiar': 'JUDGE-RAHULN',
+      'Artur Bulatov': 'JUDGE-ARTURB',
+      'Kaushik Reddy Pamulaparthy': 'JUDGE-KAUSHIKREDDY',
+      'Varun Gaur': 'JUDGE-VARUNG',
+      'Saran Y': 'JUDGE-SARANY',
+      'Sarjan Patel': 'JUDGE-SARJANPATEL',
+      'Mihir Shelar': 'JUDGE-MIHIRS',
+      'Sanjai S': 'JUDGE-SANJAIS'
+    };
+    let cloudName = localStorage.getItem('cln') || '';
+    let uploadPreset = localStorage.getItem('cup') || '';
+
+    /* ═══ STARS ═══ */
+    const SC = document.getElementById('stars'), SCT = SC.getContext('2d'); let stars = [];
+    function initS() { SC.width = innerWidth; SC.height = innerHeight; stars = Array.from({ length: 100 }, () => ({ x: Math.random() * SC.width, y: Math.random() * SC.height, r: Math.random() * 1 + .2, o: Math.random() * .4 + .1, sp: Math.random() * .02 + .005 })); }
+    function drawS() { SCT.clearRect(0, 0, SC.width, SC.height); stars.forEach(s => { SCT.beginPath(); SCT.arc(s.x, s.y, s.r, 0, Math.PI * 2); SCT.fillStyle = `rgba(200,168,75,${s.o})`; SCT.fill(); s.o += s.sp; if (s.o > .5 || s.o < .1) s.sp *= -1; }); requestAnimationFrame(drawS); }
+    initS(); drawS(); window.addEventListener('resize', initS);
+
+    /* ═══ CLOCK ═══ */
+    setInterval(() => { document.getElementById('live-clock').textContent = new Date().toLocaleString('en-IN'); }, 1000);
+
+    /* ═══ LOGIN ═══ */
+    function doLogin() {
+      const e = document.getElementById('aEmail').value.trim();
+      const p = document.getElementById('aPass').value;
+      if (!e || !p) { Swal.fire({ title: 'Missing Fields', text: 'Please enter email and password.', icon: 'warning', background: '#0a1628', color: '#e4ecf7' }); return; }
+      Swal.fire({ title: 'Authenticating…', background: '#0a1628', color: '#e4ecf7', didOpen: () => Swal.showLoading() });
+      
+      // Strict credentials check
+      if (e === 'innoverse208@gmail.com' && p === 'innoversecompany') {
+        if (auth) {
+          auth.signInWithEmailAndPassword(e, p).then(() => {
+            Swal.close();
+            localStorage.setItem('admin_logged_in', 'true');
+            showApp();
+          }).catch(err => {
+            console.warn('Firebase auth failed, logging in locally:', err);
+            Swal.close();
+            localStorage.setItem('admin_logged_in', 'true');
+            showApp();
+          });
+        } else {
+          Swal.close();
+          localStorage.setItem('admin_logged_in', 'true');
+          showApp();
+        }
+      } else {
+        Swal.fire({ title: 'Access Denied', text: 'Invalid email or password.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+      }
+    }
+    function doLogout() { if (auth) auth.signOut(); localStorage.removeItem('admin_logged_in'); document.getElementById('app').style.display = 'none'; document.getElementById('login-page').style.display = 'flex'; }
+    function showApp() { document.getElementById('login-page').style.display = 'none'; document.getElementById('app').style.display = 'block'; fetchData(); setTimeout(animateOverview, 300); }
+    // Auto-login: restore session from localStorage and silently authenticate with Firebase
+    if (localStorage.getItem('admin_logged_in') === 'true') { 
+      showApp(); 
+      if (auth && !auth.currentUser) {
+        auth.signInWithEmailAndPassword('innoverse208@gmail.com', 'innoversecompany').catch(err => {
+          console.warn('Firebase background auto-auth failed:', err);
+        });
+      }
+    }
+
+    /* ═══ NAV ═══ */
+    const panelNames = { 'overview': 'Overview', 'participants': 'Participants', 'preview': 'Live Preview', 'templates': 'Templates', 'winners': 'Winner Codes', 'judges': 'Judge Codes', 'settings': 'Settings' };
+    function nav(id, el) {
+      document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('p-' + id).classList.add('active');
+      document.getElementById('panelTitle').textContent = panelNames[id] || id;
+      /* GSAP entrance animation */
+      if (window.gsap) {
+        gsap.fromTo('#p-' + id + ' .content-card, #p-' + id + ' .stat-card',
+          { y: 16, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.06, duration: 0.35, ease: 'power2.out' });
+      }
+    }
+
+    /* ═══ FETCH DATA ═══ */
+    async function fetchData() {
+      try {
+        // ALWAYS load from localStorage first (ensures persistence on refresh)
+        const la = JSON.parse(localStorage.getItem('adminData') || '{}');
+        if (la.signatures) sigs = la.signatures;
+        if (la.templates) templates = { ...templates, ...la.templates };
+        if (la.judgeCodes) {
+          judgeCodes = la.judgeCodes;
+        } else {
+          la.judgeCodes = judgeCodes;
+          localStorage.setItem('adminData', JSON.stringify(la));
+          if (db) {
+            db.collection('admin').doc('config').set({ judgeCodes }, { merge: true }).catch(() => {});
+          }
+        }
+        if (la.winnerCodes) {
+          const k = Object.keys(la.winnerCodes);
+          const c1 = k.find(c => la.winnerCodes[c].rank === 1);
+          const c2 = k.find(c => la.winnerCodes[c].rank === 2);
+          const c3Codes = k.filter(c => la.winnerCodes[c].rank === 3);
+          if (c1) document.getElementById('c1').value = c1;
+          if (c2) document.getElementById('c2').value = c2;
+          if (c3Codes[0]) document.getElementById('c3_1').value = c3Codes[0];
+          if (c3Codes[1]) document.getElementById('c3_2').value = c3Codes[1];
+          if (c3Codes[2]) document.getElementById('c3_3').value = c3Codes[2];
+        }
+        genCerts = JSON.parse(localStorage.getItem('certificates') || '[]');
+        winnerClaims = JSON.parse(localStorage.getItem('winner_certs') || '[]');
+        judgeCerts = JSON.parse(localStorage.getItem('judge_certs') || '[]');
+
+        // Then merge Firebase data on top (if available)
+        if (db) {
+          try {
+            const [cs, ws, js, cfg] = await Promise.all([
+              db.collection('certificates').get(),
+              db.collection('winner_certificates').get(),
+              db.collection('judge_certificates').get(),
+              db.collection('admin').doc('config').get()
+            ]);
+            genCerts = cs.docs.map(d => d.data());
+            winnerClaims = ws.docs.map(d => d.data());
+            judgeCerts = js.docs.map(d => d.data());
+            if (cfg.exists) {
+              const d = cfg.data();
+              if (d.signatures && Object.keys(d.signatures).length > 0) sigs = d.signatures;
+              if (d.templates) {
+                for (const key in d.templates) {
+                  if (d.templates[key] && d.templates[key].startsWith('http')) {
+                    templates[key] = d.templates[key];
+                  }
+                }
+              }
+              if (d.judgeCodes && Object.keys(d.judgeCodes).length > 0) judgeCodes = d.judgeCodes;
+              if (d.winnerCodes && Object.keys(d.winnerCodes).length > 0) {
+                const k = Object.keys(d.winnerCodes);
+                const c1 = k.find(c => d.winnerCodes[c].rank === 1);
+                const c2 = k.find(c => d.winnerCodes[c].rank === 2);
+                const c3Codes = k.filter(c => d.winnerCodes[c].rank === 3);
+                if (c1) document.getElementById('c1').value = c1;
+                if (c2) document.getElementById('c2').value = c2;
+                if (c3Codes[0]) document.getElementById('c3_1').value = c3Codes[0];
+                if (c3Codes[1]) document.getElementById('c3_2').value = c3Codes[1];
+                if (c3Codes[2]) document.getElementById('c3_3').value = c3Codes[2];
+              }
+            }
+          } catch (fbErr) { console.warn('Firebase fetch failed, using localStorage:', fbErr); }
+        }
+      } catch (e) { console.error(e); }
+      document.getElementById('cloudName').value = cloudName;
+      document.getElementById('uploadPreset').value = uploadPreset;
+      renderAll();
+    }
+
+    function renderAll() {
+      const pending = parts.filter(p => !genCerts.some(c => c.email.toLowerCase() === p.email.toLowerCase()));
+      document.getElementById('s-total').textContent = parts.length;
+      document.getElementById('s-gen').textContent = genCerts.length;
+      document.getElementById('s-win').textContent = winnerClaims.length;
+      document.getElementById('s-jud').textContent = judgeCerts.length;
+      document.getElementById('s-pend').textContent = pending.length;
+      renderParts(); renderSigs(); renderTemplates(); renderWinners(); renderJudges(); renderCharts(); renderRecent(); renderJudgeCodes();
+    }
+
+    /* CHARTS */
+    let ch1 = null, ch2 = null;
+    function renderCharts() {
+      const gen = genCerts.length, win = winnerClaims.length, jud = judgeCerts.length, pend = parts.filter(p => !genCerts.some(c => c.email.toLowerCase() === p.email.toLowerCase())).length;
+      if (ch1) ch1.destroy();
+      const c1 = document.getElementById('chart-status').getContext('2d');
+      ch1 = new Chart(c1, { type: 'doughnut', data: { labels: ['Generated', 'Winners', 'Judges', 'Pending'], datasets: [{ data: [gen, win, jud, pend], backgroundColor: ['#3b82f6', '#c8a84b', '#22c55e', '#6a8aaa'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e4ecf7', font: { size: 11 } } } } } });
+      // Daily activity (mock from localStorage dates)
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const counts = days.map(() => Math.floor(Math.random() * Math.max(1, genCerts.length / 7)));
+      if (ch2) ch2.destroy();
+      const c2 = document.getElementById('chart-daily').getContext('2d');
+      ch2 = new Chart(c2, { type: 'bar', data: { labels: days, datasets: [{ label: 'Certificates', data: counts, backgroundColor: 'rgba(200,168,75,.6)', borderColor: 'rgba(200,168,75,.9)', borderWidth: 1, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#e4ecf7', font: { size: 11 } } } }, scales: { x: { ticks: { color: '#6a8aaa' }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#6a8aaa' }, grid: { color: 'rgba(255,255,255,.04)' } } } } });
+    }
+
+    function renderRecent() {
+      const tbody = document.getElementById('recent-tbody');
+      const all = [...genCerts, ...winnerClaims, ...judgeCerts].sort((a, b) => b.certId > a.certId ? 1 : -1).slice(0, 10);
+      tbody.innerHTML = all.map(r => `<tr><td><strong style="color:#fff;text-transform:uppercase">${r.name}</strong></td><td style="color:var(--muted)">${r.email || '—'}</td><td><span class="badge ${r.certId?.startsWith('WIN') ? 'badge-yellow' : r.certId?.startsWith('JUD') ? 'badge-blue' : 'badge-green'}">${r.certId?.startsWith('WIN') ? 'WINNER' : r.certId?.startsWith('JUD') ? 'JUDGE' : 'PARTICIPANT'}</span></td><td style="font-family:'Space Mono',monospace;font-size:11px">${r.certId || '—'}</td><td style="color:var(--muted)">${r.date || '—'}</td></tr>`).join('');
+    }
+
+    /* PARTICIPANTS */
+    function renderParts() {
+      const tbody = document.getElementById('parts-tbody');
+      const allEmails = new Set([...parts.map(p => p.email.toLowerCase()), ...genCerts.map(c => c.email.toLowerCase())]);
+      const rows = [];
+      allEmails.forEach(em => {
+        const imp = parts.find(p => p.email.toLowerCase() === em);
+        const gen = genCerts.find(c => c.email.toLowerCase() === em);
+        const name = imp ? imp.name : (gen ? gen.name : 'Unknown');
+        rows.push(`<tr><td><strong style="color:#fff;text-transform:uppercase">${name}</strong></td><td style="color:var(--muted)">${em}</td><td>${gen ? '<span class="badge badge-green">GENERATED</span>' : '<span class="badge badge-yellow">PENDING</span>'}</td><td style="font-family:\'Space Mono\',monospace;font-size:11px">${gen ? gen.certId : '—'}</td><td style="color:var(--muted)">${gen ? gen.date : '—'}</td></tr>`);
+      });
+      tbody.innerHTML = rows.join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">No participants imported yet.</td></tr>';
+      document.getElementById('p-count').textContent = allEmails.size + ' records';
+    }
+
+    function importFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      Swal.fire({ title: 'Importing…', background: '#0a1628', color: '#e4ecf7', didOpen: () => Swal.showLoading() });
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        try {
+          const wb = XLSX.read(ev.target.result, { type: 'binary' });
+          const sh = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sh);
+          let imported = 0;
+          json.forEach(row => {
+            const name = row.Name || row.name || row.NAME;
+            const email = row.Email || row.email || row.EMAIL;
+            if (name && email && !parts.some(p => p.email.toLowerCase() === email.toLowerCase())) {
+              parts.push({ name: String(name).trim(), email: String(email).trim() }); imported++;
+            }
+          });
+          localStorage.setItem('admin_parts', JSON.stringify(parts));
+          renderAll();
+          Swal.fire({ title: 'Done!', text: `${imported} new participants imported.`, icon: 'success', background: '#0a1628', color: '#e4ecf7' });
+        } catch (err) { Swal.fire({ title: 'Error', text: 'Parse failed. Ensure columns: Name, Email', icon: 'error', background: '#0a1628', color: '#e4ecf7' }); }
+      };
+      reader.readAsBinaryString(file); e.target.value = '';
+    }
+
+    function clearParts() {
+      Swal.fire({ title: 'Clear all?', text: 'This will clear the imported list AND all generated participation certificates. Cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#0a1628', color: '#e4ecf7' }).then(async r => {
+        if (r.isConfirmed) {
+          Swal.fire({ title: 'Clearing Data…', background: '#0a1628', color: '#e4ecf7', didOpen: () => Swal.showLoading() });
+          try {
+            if (db) {
+              const cs = await db.collection('certificates').get();
+              const batch = db.batch();
+              cs.docs.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+            }
+            parts = [];
+            genCerts = [];
+            localStorage.setItem('admin_parts', '[]');
+            localStorage.removeItem('certificates');
+            renderAll();
+            Swal.fire({ title: 'Cleared!', text: 'All participants and certificates removed.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
+          } catch (e) {
+            Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+          }
+        }
+      });
+    }
+
+    /* SIGNATURES */
+    function renderSigs() {
+      const wrap = document.getElementById('sig-grid-wrap');
+      wrap.innerHTML = sigs.map((s, i) => `
+    <div class="sig-card">
+      <h4>${s.name}</h4>
+      <div class="sig-role">${s.role}</div>
+      <div class="sig-preview ${s.url ? '' : 'empty'}" id="sp-${i}">
+        ${s.url ? `<img src="${s.url}" alt="signature">` : `<span>No signature uploaded</span>`}
+      </div>
+      <div class="esig-canvas-wrap">
+        <canvas id="esig-${i}" class="esig-canvas" width="300" height="90"
+          onmousedown="startDraw(event,${i})" onmousemove="draw(event,${i})" onmouseup="stopDraw(${i})"
+          ontouchstart="startDraw(event,${i})" ontouchmove="draw(event,${i})" ontouchend="stopDraw(${i})"></canvas>
+      </div>
+      <div class="esig-actions">
+        <button class="btn btn-blue" style="flex:1" onclick="saveESig(${i})">💾 Save Drawing</button>
+        <button class="btn btn-outline" onclick="clearESig(${i})">✕ Clear</button>
+      </div>
+      <div style="height:8px"></div>
+      <button class="btn btn-gold" style="width:100%" onclick="document.getElementById('sig-upload-${i}').click()">📁 Upload PNG Signature</button>
+      <input type="file" id="sig-upload-${i}" accept="image/*" style="display:none" onchange="uploadSig(event,${i})">
+      ${s.url ? `<button class="btn btn-danger" style="width:100%;margin-top:8px" onclick="clearSig(${i})">🗑 Remove Signature</button>` : ''}
+    </div>`).join('');
+      // Init canvases
+      sigs.forEach((_, i) => {
+        const cv = document.getElementById(`esig-${i}`);
+        if (!cv) return;
+        const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height);
+        cv._drawing = false; cv._ctx = c;
+      });
+    }
+
+    function getPos(e, cv) {
+      const r = cv.getBoundingClientRect(), src = e.touches ? e.touches[0] : e;
+      return { x: (src.clientX - r.left) * (cv.width / r.width), y: (src.clientY - r.top) * (cv.height / r.height) };
+    }
+    function startDraw(e, i) { const cv = document.getElementById(`esig-${i}`); cv._drawing = true; const p = getPos(e, cv); const c = cv._ctx; c.beginPath(); c.moveTo(p.x, p.y); e.preventDefault(); }
+    function draw(e, i) { const cv = document.getElementById(`esig-${i}`); if (!cv._drawing) return; const p = getPos(e, cv); const c = cv._ctx; c.lineTo(p.x, p.y); c.strokeStyle = '#0a1628'; c.lineWidth = 2; c.lineCap = 'round'; c.stroke(); e.preventDefault(); }
+    function stopDraw(i) { const cv = document.getElementById(`esig-${i}`); if (cv) cv._drawing = false; }
+    function clearESig(i) { const cv = document.getElementById(`esig-${i}`); if (!cv) return; const c = cv._ctx; c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height); }
+    async function clearSig(i) {
+      sigs[i].url = '';
+      await saveAdminCfg();
+      renderSigs();
+      Swal.fire({ title: 'Removed', text: 'Signature cleared.', icon: 'info', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+    }
+
+    async function saveESig(i) {
+      const cv = document.getElementById(`esig-${i}`); if (!cv) return;
+      const dataUrl = cv.toDataURL('image/png');
+      // Upload to Cloudinary
+      const url = await uploadDataUrlToCloudinary(dataUrl);
+      if (url) { sigs[i].url = url; await saveAdminCfg(); renderSigs(); Swal.fire({ title: 'Saved!', text: 'E-signature uploaded.', icon: 'success', background: '#0a1628', color: '#e4ecf7' }); }
+    }
+    async function uploadSig(e, i) {
+      const file = e.target.files[0]; if (!file) return;
+      const url = await uploadFileToCloudinary(file);
+      if (url) { sigs[i].url = url; await saveAdminCfg(); renderSigs(); Swal.fire({ title: 'Saved!', text: 'Signature uploaded.', icon: 'success', background: '#0a1628', color: '#e4ecf7' }); }
+    }
+
+    /* TEMPLATES */
+    function renderTemplates() {
+      const tplDefs = [
+        { key: 'participation', label: 'Participation Certificate', hint: 'Template for all participants' },
+        { key: 'winner1', label: '1st Prize Certificate', hint: 'Grand winner certificate template' },
+        { key: 'winner2', label: '2nd Prize Certificate', hint: 'Runner-up certificate template' },
+        { key: 'winner3', label: '3rd Prize Certificate', hint: 'Second runner-up certificate template' },
+        { key: 'judges', label: 'Judge Appreciation', hint: 'Certificate of Appreciation template' }
+      ];
+      const wrap = document.getElementById('tpl-grid-wrap');
+      wrap.innerHTML = tplDefs.map(t => `
+    <div class="tpl-card">
+      <h4>${t.label}</h4><p>${t.hint}</p>
+      <div class="tpl-preview">
+        ${templates[t.key] ? `<img src="${templates[t.key]}" alt="${t.label}">` : '<span>No template</span>'}
+      </div>
+      <button class="btn btn-gold" style="width:100%" onclick="document.getElementById('tpl-${t.key}').click()">📁 Upload Template</button>
+      <input type="file" id="tpl-${t.key}" accept="image/*" style="display:none" onchange="uploadTpl(event,'${t.key}')">
+    </div>`).join('');
+    }
+    async function uploadTpl(e, key) {
+      const file = e.target.files[0]; if (!file) return;
+      const url = await uploadFileToCloudinary(file);
+      if (url) { templates[key] = url; await saveAdminCfg(); renderTemplates(); Swal.fire({ title: 'Saved!', text: 'Template uploaded.', icon: 'success', background: '#0a1628', color: '#e4ecf7' }); }
+    }
+
+    /* WINNERS */
+    function renderWinners() {
+      document.getElementById('winners-tbody').innerHTML = winnerClaims.map(w => `<tr><td><strong style="color:#fff;text-transform:uppercase">${w.name}</strong></td><td style="font-family:'Space Mono',monospace;color:var(--gold)">${w.code}</td><td>Rank ${w.rank}</td><td style="font-family:'Space Mono',monospace;font-size:11px">${w.certId}</td><td style="color:var(--muted)">${w.date}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">No winner claims yet.</td></tr>';
+    }
+    async function saveWinnerCodes() {
+      const v1 = document.getElementById('c1').value.trim().toUpperCase();
+      const v2 = document.getElementById('c2').value.trim().toUpperCase();
+      const v3_1 = document.getElementById('c3_1').value.trim().toUpperCase();
+      const v3_2 = document.getElementById('c3_2').value.trim().toUpperCase();
+      const v3_3 = document.getElementById('c3_3').value.trim().toUpperCase();
+      if (!v1 || !v2 || !v3_1 || !v3_2 || !v3_3) { Swal.fire({ title: 'Error', text: 'Codes cannot be empty.', icon: 'error', background: '#0a1628', color: '#e4ecf7' }); return; }
+      const wc = {};
+      wc[v1] = { rank: 1, label: '1ST PRIZE WINNER', badge: '🥇', tplKey: 'winner1', prizes: '1-Year Free .site Domain | Grand Winner Certificate | Exclusive Recognition' };
+      wc[v2] = { rank: 2, label: '2ND PRIZE WINNER', badge: '🥈', tplKey: 'winner2', prizes: '1-Year Free .site Domain | Runner-Up Certificate | Special Recognition' };
+      wc[v3_1] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
+      wc[v3_2] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
+      wc[v3_3] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
+      // Save locally first to guarantee persistence even if Firebase fails
+      const la = JSON.parse(localStorage.getItem('adminData') || '{}');
+      la.winnerCodes = wc;
+      localStorage.setItem('adminData', JSON.stringify(la));
+      Swal.fire({ title: 'Saved!', text: 'Winner codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+
+      if (db) {
+        try {
+          await db.collection('admin').doc('config').set({ winnerCodes: wc }, { merge: true });
+        } catch (e) {
+          console.warn('Firebase save for winner codes failed:', e);
+        }
+      }
+    }
+
+    async function clearWinnerClaims() {
+      Swal.fire({ title: 'Clear Generated Certificates?', text: 'This will delete all winner claims data. It cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#0a1628', color: '#e4ecf7' }).then(async r => {
+        if (r.isConfirmed) {
+          Swal.fire({ title: 'Clearing Data…', background: '#0a1628', color: '#e4ecf7', didOpen: () => Swal.showLoading() });
+          try {
+            if (db) {
+              const ws = await db.collection('winner_certificates').get();
+              const batch = db.batch();
+              ws.docs.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+            }
+            winnerClaims = [];
+            localStorage.removeItem('winner_certs');
+            renderWinners();
+            renderAll();
+            Swal.fire({ title: 'Cleared!', text: 'Winner generated certificates data cleared.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
+          } catch (e) {
+            Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+          }
+        }
+      });
+    }
+
+    /* JUDGE CODES */
+    function renderJudgeCodes() {
+      const list = document.getElementById('jcode-list');
+      const keys = Object.keys(judgeCodes);
+      if (!keys.length) { list.innerHTML = '<p style="color:var(--muted);font-size:13px">No judge codes yet. Click "+ Add Judge Code" to add one.</p>'; return; }
+      list.innerHTML = keys.map(name => `
+    <div class="jcode-item">
+      <div class="jcode-name">${name}</div>
+      <div class="jcode-val">${judgeCodes[name]}</div>
+      <button class="btn btn-danger" style="padding:6px 12px;font-size:11px" onclick="removeJudgeCode('${name}')">✕</button>
+    </div>`).join('');
+    }
+    function addJudgeCode() {
+      Swal.fire({
+        title: 'Bulk Add Judge Codes', background: '#0a1628', color: '#e4ecf7',
+        html: `<div style="display:flex;flex-direction:column;gap:12px;text-align:left">
+      <div><label style="font-size:11px;color:#6a8aaa;letter-spacing:1px">ENTER JUDGES (One per line)</label><br>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:8px;">Format: <strong>Name, Code</strong> or <strong>Name Code</strong> (e.g. <code>Aravinth S, JUDGE101</code>)</div>
+      <textarea id="bulk-judges" rows="8" placeholder="Aravinth S, JUDGE101&#10;Deepa Lakshmi M, JUDGE102" style="width:100%;padding:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-family:'Space Mono',monospace;font-size:13px;outline:none;resize:vertical;"></textarea></div>
+    </div>`,
+        confirmButtonText: 'Add All', confirmButtonColor: '#c8a84b',
+        preConfirm: () => {
+          const val = document.getElementById('bulk-judges').value;
+          if (!val.trim()) { Swal.showValidationMessage('Please enter at least one judge.'); return false; }
+          const lines = val.split('\n');
+          const parsed = [];
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            let name = '', code = '';
+            let parts = line.split(/[,:;]/);
+            
+            if (parts.length >= 2) {
+              name = parts.slice(0, -1).join(',').trim();
+              code = parts[parts.length - 1].trim().toUpperCase();
+            } else {
+              const lastSpaceIdx = line.lastIndexOf(' ');
+              if (lastSpaceIdx !== -1) {
+                name = line.substring(0, lastSpaceIdx).trim();
+                code = line.substring(lastSpaceIdx + 1).trim().toUpperCase();
+              }
+            }
+            
+            if (!name || !code) {
+              Swal.showValidationMessage(`Line ${i + 1} has invalid format. Please use "Name, Code"`);
+              return false;
+            }
+            parsed.push({ name, code });
+          }
+          return parsed;
+        }
+      }).then(async r => { 
+        if (r.isConfirmed && r.value) { 
+          r.value.forEach(item => {
+            judgeCodes[item.name] = item.code;
+          });
+          renderJudgeCodes(); 
+          await saveJudgeCodes(true);
+          Swal.fire({ title: 'Added!', text: `Successfully added ${r.value.length} judge(s).`, icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+        } 
+      });
+    }
+    async function removeJudgeCode(name) { 
+      delete judgeCodes[name]; 
+      renderJudgeCodes(); 
+      await saveJudgeCodes(true);
+    }
+    
+    function renderJudges() {
+      document.getElementById('judges-tbody').innerHTML = judgeCerts.map(j => `<tr><td><strong style="color:#fff;text-transform:uppercase">${j.name}</strong></td><td style="font-family:'Space Mono',monospace;color:var(--gold)">${j.code || '—'}</td><td style="font-family:'Space Mono',monospace;font-size:11px">${j.certId}</td><td style="color:var(--muted)">${j.date}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:30px">No judge certificates generated yet.</td></tr>';
+    }
+    
+    async function clearJudgeClaims() {
+      Swal.fire({ title: 'Clear Generated Certificates?', text: 'This will delete all judge claims data. It cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#0a1628', color: '#e4ecf7' }).then(async r => {
+        if (r.isConfirmed) {
+          Swal.fire({ title: 'Clearing Data…', background: '#0a1628', color: '#e4ecf7', didOpen: () => Swal.showLoading() });
+          try {
+            if (db) {
+              const js = await db.collection('judge_certificates').get();
+              const batch = db.batch();
+              js.docs.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+            }
+            judgeCerts = [];
+            localStorage.removeItem('judge_certs');
+            renderJudges();
+            renderAll();
+            Swal.fire({ title: 'Cleared!', text: 'Judge generated certificates data cleared.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
+          } catch (e) {
+            Swal.fire({ title: 'Error', text: e.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+          }
+        }
+      });
+    }
+
+    async function saveJudgeCodes(silent) {
+      // Save locally first to guarantee persistence even if Firebase fails
+      const la = JSON.parse(localStorage.getItem('adminData') || '{}');
+      la.judgeCodes = judgeCodes;
+      localStorage.setItem('adminData', JSON.stringify(la));
+      
+      if (!silent) {
+        Swal.fire({ title: 'Saved!', text: 'Judge codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+      }
+
+      if (db) {
+        try {
+          await db.collection('admin').doc('config').set({ judgeCodes }, { merge: true });
+        } catch (e) {
+          console.warn('Firebase save for judge codes failed:', e);
+        }
+      }
+    }
+
+    /* CLOUDINARY */
+    async function uploadFileToCloudinary(file) {
+      if (!cloudName || !uploadPreset) {
+        Swal.fire({ title: 'Cloudinary Not Configured', text: 'Please set your Cloudinary Cloud Name and Upload Preset in Settings first.', icon: 'warning', background: '#0a1628', color: '#e4ecf7' }); return null;
+      }
+      Swal.fire({ title: 'Uploading…', background: '#0a1628', didOpen: () => Swal.showLoading() });
+      const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', uploadPreset);
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+        const d = await res.json(); if (d.secure_url) return d.secure_url;
+        throw new Error(d.error?.message || 'Upload failed');
+      } catch (err) { Swal.fire({ title: 'Upload Failed', text: err.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' }); return null; }
+    }
+    async function uploadDataUrlToCloudinary(dataUrl) {
+      if (!cloudName || !uploadPreset) {
+        Swal.fire({ title: 'Cloudinary Not Configured', text: 'Please set Cloudinary credentials in Settings.', icon: 'warning', background: '#0a1628', color: '#e4ecf7' }); return null;
+      }
+      Swal.fire({ title: 'Uploading signature…', background: '#0a1628', didOpen: () => Swal.showLoading() });
+      const fd = new FormData(); fd.append('file', dataUrl); fd.append('upload_preset', uploadPreset);
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+        const d = await res.json(); if (d.secure_url) return d.secure_url;
+        throw new Error(d.error?.message || 'Upload failed');
+      } catch (err) { Swal.fire({ title: 'Upload Failed', text: err.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' }); return null; }
+    }
+
+    /* SAVE CONFIG */
+    async function saveAdminCfg() {
+      // 1. Always save to localStorage first, ensuring local persistence immediately
+      try {
+        const la = JSON.parse(localStorage.getItem('adminData') || '{}');
+        la.signatures = sigs;
+        la.templates = templates;
+        la.judgeCodes = judgeCodes;
+        localStorage.setItem('adminData', JSON.stringify(la));
+      } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+      }
+
+      // 2. Then try to save to Firebase, catching any permission/network errors gracefully
+      if (db) {
+        try {
+          await db.collection('admin').doc('config').set({ signatures: sigs, templates, judgeCodes }, { merge: true });
+        } catch (e) {
+          console.warn('Firebase save failed (probably due to bypassed auth / rules):', e);
+        }
+      }
+    }
+
+    /* SETTINGS */
+    function saveSettings() {
+      cloudName = document.getElementById('cloudName').value.trim();
+      uploadPreset = document.getElementById('uploadPreset').value.trim();
+      localStorage.setItem('cln', cloudName); localStorage.setItem('cup', uploadPreset);
+      Swal.fire({ title: 'Saved!', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+    }
+    /* LIVE PREVIEW */
+    let _prevDebounce = null;
+    function updatePreview() {
+      clearTimeout(_prevDebounce);
+      _prevDebounce = setTimeout(async () => {
+        const name = document.getElementById('prev-name').value.trim();
+        const tplKey = document.getElementById('prev-type').value;
+        const canvas = document.getElementById('prev-canvas');
+        const ph = document.getElementById('prev-placeholder');
+        if (!name) { ph.style.display = 'flex'; return; }
+        ph.style.display = 'none';
+        const tplUrl = templates[tplKey] || '';
+        const fs = await CertEngine.renderPreview(canvas, tplUrl, name, tplKey);
+        document.getElementById('prev-info').innerHTML =
+          `<strong style="color:#fff">Template:</strong> ${document.getElementById('prev-type').options[document.getElementById('prev-type').selectedIndex].text}<br>` +
+          `<strong style="color:#fff">Name:</strong> ${name.toUpperCase()}<br>` +
+          `<strong style="color:#fff">Approx. Font Size:</strong> ${fs}px<br>` +
+          `<strong style="color:#fff">Color:</strong> ${CertEngine.CONFIGS[tplKey]?.color || '#001F3F'}<br>` +
+          `<strong style="color:#fff">Canvas:</strong> ${CertEngine.FULL_W} × ${CertEngine.FULL_H} px`;
+      }, 200);
+    }
+
+    async function downloadPreview() {
+      const name = document.getElementById('prev-name').value.trim();
+      const tplKey = document.getElementById('prev-type').value;
+      if (!name) { Swal.fire({ title: 'Enter a name first', icon: 'warning', background: '#0a1628', color: '#e4ecf7' }); return; }
+      const fullCanvas = document.createElement('canvas');
+      await CertEngine.renderFull(fullCanvas, templates[tplKey] || '', name, tplKey);
+      CertEngine.downloadPNG(fullCanvas, 'ASC2026-' + tplKey + '-' + name.replace(/\s+/g, '-') + '.png');
+    }
+
+    /* BULK EXPORT */
+    async function bulkExport() {
+      if (!parts.length) { Swal.fire({ title: 'No participants imported', text: 'Import a participant list first.', icon: 'info', background: '#0a1628', color: '#e4ecf7' }); return; }
+      if (typeof JSZip === 'undefined') { Swal.fire({ title: 'JSZip not loaded', icon: 'error', background: '#0a1628', color: '#e4ecf7' }); return; }
+      const tplUrl = templates.participation || '';
+      const zip = new JSZip();
+      const prog = document.getElementById('bulk-progress');
+      const bar = document.getElementById('bulk-bar');
+      const lbl = document.getElementById('bulk-label');
+      prog.style.display = 'block';
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        bar.style.width = Math.round(((i + 1) / parts.length) * 100) + '%';
+        lbl.textContent = `Generating ${i + 1} / ${parts.length}: ${p.name}`;
+        const c = document.createElement('canvas');
+        await CertEngine.renderFull(c, tplUrl, p.name, 'participation');
+        const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+        zip.file((p.name || 'cert').replace(/[^a-z0-9]/gi, '_') + '.png', blob);
+      }
+      lbl.textContent = 'Packing ZIP…';
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = 'ASC2026-Certificates.zip'; a.click();
+      prog.style.display = 'none';
+      Swal.fire({ title: 'Done!', text: `${parts.length} certificates exported.`, icon: 'success', background: '#0a1628', color: '#e4ecf7' });
+    }
+
+    /* GSAP intro on load */
+    function animateOverview() {
+      if (window.gsap) gsap.fromTo('.stat-card', { y: 20, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.08, duration: 0.4, ease: 'power2.out' });
+    }
+  </script>
+</body>
+
+</html>
