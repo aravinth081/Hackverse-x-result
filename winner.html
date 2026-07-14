@@ -561,14 +561,6 @@
     let _wCanvas = null;
 
     async function loadCfg() {
-      try {
-        const lo = localStorage.getItem('adminData');
-        if (lo) {
-          const d = JSON.parse(lo);
-          if (d.templates) adminCfg.templates = { ...adminCfg.templates, ...d.templates };
-          if (d.winnerCodes) wCodes = { ...wCodes, ...d.winnerCodes };
-        }
-      } catch (e) { console.error('Failed to load local config:', e); }
       if (db) {
         try {
           const d = await db.collection('admin').doc('config').get();
@@ -683,8 +675,6 @@
     async function verifyCode() {
       const code = document.getElementById('wCode').value.trim().toUpperCase();
       if (!code) { document.getElementById('errMsg').classList.add('on'); return; }
-      const used = JSON.parse(localStorage.getItem('usedWinnerCodes') || '[]');
-      if (used.includes(code)) { alert('⚠️ This code has already been used.'); return; }
       
       document.getElementById('wloader').classList.add('on');
       document.getElementById('errMsg').classList.remove('on');
@@ -712,9 +702,6 @@
         const name = prompt(`🎉 Valid winner code verified!\n\nRank: ${info.label}\n\nEnter your full name below for the certificate:`, '');
         if (!name || !name.trim()) { alert('Name entry required.'); return; }
         
-        used.push(code);
-        localStorage.setItem('usedWinnerCodes', JSON.stringify(used));
-        
         buildCert(name.trim(), info, code);
       }, 1400);
     }
@@ -732,9 +719,6 @@
       
       try {
         if (db) db.collection('winner_certificates').doc(cid).set({ name: name.toUpperCase(), code, rank: info.rank, certId: cid, date: dt, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        const wl = JSON.parse(localStorage.getItem('winner_certs') || '[]');
-        wl.push({ name: name.toUpperCase(), code, rank: info.rank, certId: cid, date: dt });
-        localStorage.setItem('winner_certs', JSON.stringify(wl));
       } catch (e) { }
       
       document.getElementById('wloader').classList.remove('on');

@@ -1986,10 +1986,6 @@
     let _certCanvas = null;
 
     async function loadCfg() {
-      try {
-        const lo = localStorage.getItem('adminData');
-        if (lo) { const d = JSON.parse(lo); if (d.templates) adminCfg.templates = { ...adminCfg.templates, ...d.templates }; }
-      } catch (e) { console.error('Failed to load local config:', e); }
       if (db) {
         try {
           const d = await db.collection('admin').doc('config').get();
@@ -2292,9 +2288,6 @@
       try {
         const name = raw.toUpperCase();
         if (db) await db.collection('certificates').doc(cid).set({ name, email, certId: cid, date: dt, type: 'participation', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        const ex = JSON.parse(localStorage.getItem('certificates') || '[]');
-        ex.push({ name, email, certId: cid, date: dt, type: 'participation' });
-        localStorage.setItem('certificates', JSON.stringify(ex));
       } catch (e) { }
 
       document.getElementById('loader').classList.remove('on');

@@ -1271,7 +1271,7 @@
     try { firebase.initializeApp(FB); db = firebase.firestore(); auth = firebase.auth(); } catch (e) { }
 
     /* ═══ STATE ═══ */
-    let parts = JSON.parse(localStorage.getItem('admin_parts') || '[]');
+    let parts = [];
     let genCerts = []; let winnerClaims = []; let judgeCerts = [];
     let sigs = [
       { name: 'Karthickkumar S', role: 'Founder', url: '' },
@@ -1311,8 +1311,8 @@
       'Mihir Shelar': 'JUDGE-MIHIRS',
       'Sanjai S': 'JUDGE-SANJAIS'
     };
-    let cloudName = localStorage.getItem('cln') || '';
-    let uploadPreset = localStorage.getItem('cup') || '';
+    let cloudName = '';
+    let uploadPreset = '';
 
     /* ═══ STARS ═══ */
     const SC = document.getElementById('stars'), SCT = SC.getContext('2d'); let stars = [];
@@ -1335,27 +1335,27 @@
         if (auth) {
           auth.signInWithEmailAndPassword(e, p).then(() => {
             Swal.close();
-            localStorage.setItem('admin_logged_in', 'true');
+            sessionStorage.setItem('admin_logged_in', 'true');
             showApp();
           }).catch(err => {
             console.warn('Firebase auth failed, logging in locally:', err);
             Swal.close();
-            localStorage.setItem('admin_logged_in', 'true');
+            sessionStorage.setItem('admin_logged_in', 'true');
             showApp();
           });
         } else {
           Swal.close();
-          localStorage.setItem('admin_logged_in', 'true');
+          sessionStorage.setItem('admin_logged_in', 'true');
           showApp();
         }
       } else {
         Swal.fire({ title: 'Access Denied', text: 'Invalid email or password.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
       }
     }
-    function doLogout() { if (auth) auth.signOut(); localStorage.removeItem('admin_logged_in'); document.getElementById('app').style.display = 'none'; document.getElementById('login-page').style.display = 'flex'; }
+    function doLogout() { if (auth) auth.signOut(); sessionStorage.removeItem('admin_logged_in'); document.getElementById('app').style.display = 'none'; document.getElementById('login-page').style.display = 'flex'; }
     function showApp() { document.getElementById('login-page').style.display = 'none'; document.getElementById('app').style.display = 'block'; fetchData(); setTimeout(animateOverview, 300); }
-    // Auto-login: restore session from localStorage and silently authenticate with Firebase
-    if (localStorage.getItem('admin_logged_in') === 'true') { 
+    // Auto-login: restore session from sessionStorage and silently authenticate with Firebase
+    if (sessionStorage.getItem('admin_logged_in') === 'true') { 
       showApp(); 
       if (auth && !auth.currentUser) {
         auth.signInWithEmailAndPassword('innoverse208@gmail.com', 'innoversecompany').catch(err => {
@@ -1382,46 +1382,21 @@
     /* ═══ FETCH DATA ═══ */
     async function fetchData() {
       try {
-        // ALWAYS load from localStorage first (ensures persistence on refresh)
-        const la = JSON.parse(localStorage.getItem('adminData') || '{}');
-        if (la.signatures) sigs = la.signatures;
-        if (la.templates) templates = { ...templates, ...la.templates };
-        if (la.judgeCodes) {
-          judgeCodes = la.judgeCodes;
-        } else {
-          la.judgeCodes = judgeCodes;
-          localStorage.setItem('adminData', JSON.stringify(la));
-          if (db) {
-            db.collection('admin').doc('config').set({ judgeCodes }, { merge: true }).catch(() => {});
-          }
-        }
-        if (la.winnerCodes) {
-          const k = Object.keys(la.winnerCodes);
-          const c1 = k.find(c => la.winnerCodes[c].rank === 1);
-          const c2 = k.find(c => la.winnerCodes[c].rank === 2);
-          const c3Codes = k.filter(c => la.winnerCodes[c].rank === 3);
-          if (c1) document.getElementById('c1').value = c1;
-          if (c2) document.getElementById('c2').value = c2;
-          if (c3Codes[0]) document.getElementById('c3_1').value = c3Codes[0];
-          if (c3Codes[1]) document.getElementById('c3_2').value = c3Codes[1];
-          if (c3Codes[2]) document.getElementById('c3_3').value = c3Codes[2];
-        }
-        genCerts = JSON.parse(localStorage.getItem('certificates') || '[]');
-        winnerClaims = JSON.parse(localStorage.getItem('winner_certs') || '[]');
-        judgeCerts = JSON.parse(localStorage.getItem('judge_certs') || '[]');
-
-        // Then merge Firebase data on top (if available)
         if (db) {
           try {
-            const [cs, ws, js, cfg] = await Promise.all([
+            const [cs, ws, js, cfg, pDoc] = await Promise.all([
               db.collection('certificates').get(),
               db.collection('winner_certificates').get(),
               db.collection('judge_certificates').get(),
-              db.collection('admin').doc('config').get()
+              db.collection('admin').doc('config').get(),
+              db.collection('admin').doc('participants').get()
             ]);
             genCerts = cs.docs.map(d => d.data());
             winnerClaims = ws.docs.map(d => d.data());
             judgeCerts = js.docs.map(d => d.data());
+            if (pDoc.exists) {
+              parts = pDoc.data().list || [];
+            }
             if (cfg.exists) {
               const d = cfg.data();
               if (d.signatures && Object.keys(d.signatures).length > 0) sigs = d.signatures;
@@ -1432,6 +1407,8 @@
                   }
                 }
               }
+              if (d.cloudName) cloudName = d.cloudName;
+              if (d.uploadPreset) uploadPreset = d.uploadPreset;
               if (d.judgeCodes && Object.keys(d.judgeCodes).length > 0) judgeCodes = d.judgeCodes;
               if (d.winnerCodes && Object.keys(d.winnerCodes).length > 0) {
                 const k = Object.keys(d.winnerCodes);
@@ -1445,7 +1422,7 @@
                 if (c3Codes[2]) document.getElementById('c3_3').value = c3Codes[2];
               }
             }
-          } catch (fbErr) { console.warn('Firebase fetch failed, using localStorage:', fbErr); }
+          } catch (fbErr) { console.error('Firebase fetch failed:', fbErr); }
         }
       } catch (e) { console.error(e); }
       document.getElementById('cloudName').value = cloudName;
@@ -1516,7 +1493,9 @@
               parts.push({ name: String(name).trim(), email: String(email).trim() }); imported++;
             }
           });
-          localStorage.setItem('admin_parts', JSON.stringify(parts));
+          if (db) {
+            db.collection('admin').doc('participants').set({ list: parts }).catch(err => console.warn('Failed to sync participants to Firebase:', err));
+          }
           renderAll();
           Swal.fire({ title: 'Done!', text: `${imported} new participants imported.`, icon: 'success', background: '#0a1628', color: '#e4ecf7' });
         } catch (err) { Swal.fire({ title: 'Error', text: 'Parse failed. Ensure columns: Name, Email', icon: 'error', background: '#0a1628', color: '#e4ecf7' }); }
@@ -1533,12 +1512,11 @@
               const cs = await db.collection('certificates').get();
               const batch = db.batch();
               cs.docs.forEach(doc => batch.delete(doc.ref));
+              batch.set(db.collection('admin').doc('participants'), { list: [] });
               await batch.commit();
             }
             parts = [];
             genCerts = [];
-            localStorage.setItem('admin_parts', '[]');
-            localStorage.removeItem('certificates');
             renderAll();
             Swal.fire({ title: 'Cleared!', text: 'All participants and certificates removed.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
           } catch (e) {
@@ -1652,18 +1630,16 @@
       wc[v3_1] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
       wc[v3_2] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
       wc[v3_3] = { rank: 3, label: '3RD PRIZE WINNER', badge: '🥉', tplKey: 'winner3', prizes: '1-Year Free .site Domain | Certificate of Achievement | Special Recognition' };
-      // Save locally first to guarantee persistence even if Firebase fails
-      const la = JSON.parse(localStorage.getItem('adminData') || '{}');
-      la.winnerCodes = wc;
-      localStorage.setItem('adminData', JSON.stringify(la));
-      Swal.fire({ title: 'Saved!', text: 'Winner codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
-
       if (db) {
         try {
           await db.collection('admin').doc('config').set({ winnerCodes: wc }, { merge: true });
+          Swal.fire({ title: 'Saved!', text: 'Winner codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
         } catch (e) {
           console.warn('Firebase save for winner codes failed:', e);
+          Swal.fire({ title: 'Error', text: 'Firebase save failed.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
         }
+      } else {
+        Swal.fire({ title: 'Error', text: 'Database not connected.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
       }
     }
 
@@ -1679,7 +1655,6 @@
               await batch.commit();
             }
             winnerClaims = [];
-            localStorage.removeItem('winner_certs');
             renderWinners();
             renderAll();
             Swal.fire({ title: 'Cleared!', text: 'Winner generated certificates data cleared.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
@@ -1775,7 +1750,6 @@
               await batch.commit();
             }
             judgeCerts = [];
-            localStorage.removeItem('judge_certs');
             renderJudges();
             renderAll();
             Swal.fire({ title: 'Cleared!', text: 'Judge generated certificates data cleared.', icon: 'success', background: '#0a1628', color: '#e4ecf7' });
@@ -1787,20 +1761,21 @@
     }
 
     async function saveJudgeCodes(silent) {
-      // Save locally first to guarantee persistence even if Firebase fails
-      const la = JSON.parse(localStorage.getItem('adminData') || '{}');
-      la.judgeCodes = judgeCodes;
-      localStorage.setItem('adminData', JSON.stringify(la));
-      
-      if (!silent) {
-        Swal.fire({ title: 'Saved!', text: 'Judge codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
-      }
-
       if (db) {
         try {
           await db.collection('admin').doc('config').set({ judgeCodes }, { merge: true });
+          if (!silent) {
+            Swal.fire({ title: 'Saved!', text: 'Judge codes saved successfully.', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+          }
         } catch (e) {
           console.warn('Firebase save for judge codes failed:', e);
+          if (!silent) {
+            Swal.fire({ title: 'Error', text: 'Firebase save failed.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+          }
+        }
+      } else {
+        if (!silent) {
+          Swal.fire({ title: 'Error', text: 'Database not connected.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
         }
       }
     }
@@ -1833,18 +1808,6 @@
 
     /* SAVE CONFIG */
     async function saveAdminCfg() {
-      // 1. Always save to localStorage first, ensuring local persistence immediately
-      try {
-        const la = JSON.parse(localStorage.getItem('adminData') || '{}');
-        la.signatures = sigs;
-        la.templates = templates;
-        la.judgeCodes = judgeCodes;
-        localStorage.setItem('adminData', JSON.stringify(la));
-      } catch (e) {
-        console.error('Failed to save to localStorage:', e);
-      }
-
-      // 2. Then try to save to Firebase, catching any permission/network errors gracefully
       if (db) {
         try {
           await db.collection('admin').doc('config').set({ signatures: sigs, templates, judgeCodes }, { merge: true });
@@ -1855,11 +1818,20 @@
     }
 
     /* SETTINGS */
-    function saveSettings() {
+    async function saveSettings() {
       cloudName = document.getElementById('cloudName').value.trim();
       uploadPreset = document.getElementById('uploadPreset').value.trim();
-      localStorage.setItem('cln', cloudName); localStorage.setItem('cup', uploadPreset);
-      Swal.fire({ title: 'Saved!', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+      if (db) {
+        try {
+          await db.collection('admin').doc('config').set({ cloudName, uploadPreset }, { merge: true });
+          Swal.fire({ title: 'Saved!', icon: 'success', background: '#0a1628', color: '#e4ecf7', timer: 1500, showConfirmButton: false });
+        } catch (e) {
+          console.error('Firebase settings save failed:', e);
+          Swal.fire({ title: 'Save Failed', text: e.message, icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+        }
+      } else {
+        Swal.fire({ title: 'Error', text: 'Database not connected.', icon: 'error', background: '#0a1628', color: '#e4ecf7' });
+      }
     }
     /* LIVE PREVIEW */
     let _prevDebounce = null;

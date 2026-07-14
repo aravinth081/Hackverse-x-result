@@ -585,14 +585,6 @@
     let _jCanvas = null;
 
     async function loadCfg() {
-      try {
-        const lo = localStorage.getItem('adminData');
-        if (lo) {
-          const d = JSON.parse(lo);
-          if (d.templates) adminCfg.templates = { ...adminCfg.templates, ...d.templates };
-          if (d.judgeCodes) adminCfg.judgeCodes = { ...adminCfg.judgeCodes, ...d.judgeCodes };
-        }
-      } catch (e) { console.error('Failed to load local config:', e); }
       if (db) {
         try {
           const d = await db.collection('admin').doc('config').get();
@@ -708,10 +700,6 @@
       const name = document.getElementById('jName').value.trim();
       const code = document.getElementById('jCode').value.trim().toUpperCase();
       if (!name || !code) { document.getElementById('jErr').classList.add('on'); return; }
-
-      // Check local storage first
-      const used = JSON.parse(localStorage.getItem('usedJudgeCodes') || '[]');
-      if (used.includes(code)) { alert('⚠️ This code has already been used.'); return; }
       
       document.getElementById('jloader').classList.add('on');
       document.getElementById('jErr').classList.remove('on');
@@ -738,10 +726,6 @@
         
         if (!isValid) { document.getElementById('jErr').classList.add('on'); return; }
         
-        // Save to local storage used list
-        used.push(code);
-        localStorage.setItem('usedJudgeCodes', JSON.stringify(used));
-        
         await buildJudgeCert(name, code);
       }, 1200);
     }
@@ -762,9 +746,6 @@
       
       try {
         if (db) db.collection('judge_certificates').doc(cid).set({ name: name.toUpperCase(), code, certId: cid, date: dt, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        const jl = JSON.parse(localStorage.getItem('judge_certs') || '[]');
-        jl.push({ name: name.toUpperCase(), code, certId: cid, date: dt });
-        localStorage.setItem('judge_certs', JSON.stringify(jl));
       } catch (e) { }
       
       document.getElementById('jloader').classList.remove('on');
